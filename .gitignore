@@ -1,0 +1,11 @@
+
+*.json
+*.h5
+*.hdf5
+.DS_Store
+
+__pycache__
+
+data/cup_plus/*_data
+
+models/**
