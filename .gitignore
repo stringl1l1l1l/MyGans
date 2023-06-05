@@ -7,5 +7,6 @@
 __pycache__
 
 data/cup_plus/*_data
+images/wgan/*
 
 models/**

@@ -21,7 +21,7 @@ os.makedirs("images/wgan", exist_ok=True)
 os.makedirs("models/wgan", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=10000, help="number of epochs of training")
+parser.add_argument("--n_epochs", type=int, default=20000, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.00002, help="learning rate")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
@@ -30,7 +30,8 @@ parser.add_argument("--img_size", type=int, default=64, help="size of each image
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
 parser.add_argument("--n_critic", type=int, default=5, help="number of training steps for discriminator per iter")
 parser.add_argument("--clip_value", type=float, default=0.01, help="lower and upper clip value for disc. weights")
-parser.add_argument("--sample_interval", type=int, default=10000, help="interval between image samples")
+parser.add_argument("--sample_interval", type=int, default=5000, help="interval between image samples")
+parser.add_argument("--model_interval", type=int, default=100000, help="interval between model samples")
 opt = parser.parse_args()
 print(opt)
 
@@ -87,6 +88,11 @@ class Discriminator(nn.Module):
 generator = Generator()
 discriminator = Discriminator()
 
+if os.path.exists("./models/wgan/generator.pth"):
+    generator.load_state_dict(torch.load("./models/wgan/generator.pth"))
+if os.path.exists("./models/wgan/discriminator.pth"):
+    discriminator.load_state_dict(torch.load("./models/wgan/discriminator.pth"))
+    
 if cuda:
     generator.cuda()
     discriminator.cuda()
@@ -182,7 +188,10 @@ for epoch in range(opt.n_epochs):
             )
 
         if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], "images/wgan/%d.png" % batches_done, nrow=4, normalize=True)
+            save_image(gen_imgs.data, "images/wgan/%d.png" % batches_done, nrow=4, normalize=True)
+            
+        if batches_done % opt.model_interval == 0:
             torch.save(generator.state_dict(), f"models/wgan/generator_{batches_done}.pth")
             torch.save(discriminator.state_dict(), f"models/wgan/discriminator_{batches_done}.pth")
+            
         batches_done += 1
