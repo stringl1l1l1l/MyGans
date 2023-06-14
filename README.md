@@ -107,3 +107,89 @@ parser.add_argument("--sample_interval", type=int, default=10000, help="interval
 根据第四次训练经验，本次训练调整了潜在空间大小，继续尝试生成64*64分辨率的图像，下面是训练的结果展示：
 
 ### 结果展示
+
+
+### train6
+前几次训练的网络架构使用的还是全连接层，最后的效果也是一言难尽，因此本次训练尝试更换了网络架构，参考DCGAN，
+生成器采用三层反卷积+LN+ReLU再加一层tanh架构，判别器采用三层卷积层+LN+LeakyReLU。训练结果确实比原来更清晰，
+但效果仍然不好，特别是在长时间训练过后，发现判别器的损失函数始终在-1上下波动，却始终小于0，这说明判别器过强，训练难以进行。
+
+### train7
+继续改进网络架构，将LN层替换为BN层，并扩充了一些高质量的数据集。对于判别器过强，生成器过弱的问题，
+我猜测是由于梯度消失导致的，WGAN梯度裁剪无法解决这一问题，因此尝试使用WGAN-GP，梯度惩罚的方式做正则化，
+该方法的训练效果是目前为止最好的。
+
+但是GP的权重超参数如何选择又是一个问题，本次训练我选择了10作为权重参数，结果在训练到10w批次的时候，生成器突然崩了，生成出一堆噪声图像，D loss变成了一个极大的负数。
+
+#### 超参数  
+这组超参是目前效果最好的
+```
+parser.add_argument("--n_epochs", type=int, default=3000, help="number of epochs of training")
+parser.add_argument("--batch_size", type=int, default=32, help="size of the batches")
+parser.add_argument("--lr_g", type=float, default=0.005, help="generator learning rate")
+parser.add_argument("--lr_d", type=float, default=0.005, help="discriminator learning rate")
+parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
+parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
+parser.add_argument("--img_size", type=int, default=64, help="size of each image dimension")
+parser.add_argument("--channels", type=int, default=3, help="number of image channels")
+parser.add_argument("--n_critic", type=int, default=5, help="number of training steps for discriminator per iter")
+parser.add_argument("--clip_value", type=float, default=10000, help="lower and upper clip value for disc. weights")
+parser.add_argument("--sample_interval", type=int, default=1000, help="interval between image samples")
+parser.add_argument("--model_interval", type=int, default=10000, help="interval between model samples")
+parser.add_argument("--model_depth", type=int, default=3, help="depth of model's net")
+parser.add_argument("--gp_weight", type=int, default=10, help="gradient penalty weight")
+parser.add_argument("--b1", type=float, default=0, help="adam: decay of first order momentum of gradient")
+parser.add_argument("--b2", type=float, default=0.9, help="adam: decay of first order momentum of gradient")
+```
+
+
+
+
+### train12
+
+这次跑到8924轮，尽管损失函数很稳定，最后还是生成了一堆噪声图像，可以看到此时G loss已经很大了
+[Epoch 8924/100000] [Batch 15/133] [D loss: 12.595483] [G loss: 4765408.000000]
+[Epoch 8924/100000] [Batch 20/133] [D loss: -3.912184] [G loss: 4765635.500000]
+[Epoch 8924/100000] [Batch 25/133] [D loss: 6.527401] [G loss: 4765576.000000]
+[Epoch 8924/100000] [Batch 30/133] [D loss: -23.478380] [G loss: 4765754.000000]
+[Epoch 8924/100000] [Batch 35/133] [D loss: -11.447525] [G loss: 4765677.000000]
+[Epoch 8924/100000] [Batch 40/133] [D loss: -9.967720] [G loss: 4765659.500000]
+[Epoch 8924/100000] [Batch 45/133] [D loss: -6.349782] [G loss: 4765589.500000]
+[Epoch 8924/100000] [Batch 50/133] [D loss: -17.848280] [G loss: 4765641.500000]
+[Epoch 8924/100000] [Batch 55/133] [D loss: -6.949971] [G loss: 4765597.500000]
+[Epoch 8924/100000] [Batch 60/133] [D loss: -1.480281] [G loss: 4765685.000000]
+[Epoch 8924/100000] [Batch 65/133] [D loss: -6.868345] [G loss: 4765728.000000]
+[Epoch 8924/100000] [Batch 70/133] [D loss: -2.923069] [G loss: 4765566.000000]
+[Epoch 8924/100000] [Batch 75/133] [D loss: -1.481089] [G loss: 4765335.000000]
+[Epoch 8924/100000] [Batch 80/133] [D loss: 9.014521] [G loss: 4765289.500000]
+[Epoch 8924/100000] [Batch 85/133] [D loss: -29.439777] [G loss: 4765282.000000]
+[Epoch 8924/100000] [Batch 90/133] [D loss: -46.476624] [G loss: 4765298.000000]
+[Epoch 8924/100000] [Batch 95/133] [D loss: -18.470098] [G loss: 4765179.000000]
+[Epoch 8924/100000] [Batch 100/133] [D loss: -6.422441] [G loss: 4765119.000000]
+[Epoch 8924/100000] [Batch 105/133] [D loss: -13.307665] [G loss: 4765222.500000]
+[Epoch 8924/100000] [Batch 110/133] [D loss: -3.416743] [G loss: 4765458.500000]
+[Epoch 8924/100000] [Batch 115/133] [D loss: -4.972701] [G loss: 4765306.000000]
+[Epoch 8924/100000] [Batch 120/133] [D loss: -6.873494] [G loss: 4765138.000000]
+[Epoch 8924/100000] [Batch 125/133] [D loss: -7.450010] [G loss: 4765272.000000]
+[Epoch 8924/100000] [Batch 130/133] [D loss: -10.917979] [G loss: 4765218.000000]
+[Epoch 8925/100000] [Batch 0/133] [D loss: 14.615849] [G loss: 4765203.500000]
+[Epoch 8925/100000] [Batch 5/133] [D loss: -4.442653] [G loss: 4765181.500000]
+[Epoch 8925/100000] [Batch 10/133] [D loss: -6.969006] [G loss: 4765371.000000]
+[Epoch 8925/100000] [Batch 15/133] [D loss: -2.907098] [G loss: 4765205.500000]
+[Epoch 8925/100000] [Batch 20/133] [D loss: 6.759264] [G loss: 4765253.000000]
+[Epoch 8925/100000] [Batch 25/133] [D loss: -55.443371] [G loss: 4765353.500000]
+[Epoch 8925/100000] [Batch 30/133] [D loss: 7.076761] [G loss: 4765086.000000]
+[Epoch 8925/100000] [Batch 35/133] [D loss: 28.162670] [G loss: 4765164.000000]
+[Epoch 8925/100000] [Batch 40/133] [D loss: 47.741386] [G loss: 4765057.500000]
+[Epoch 8925/100000] [Batch 45/133] [D loss: -1.473396] [G loss: 4765051.000000]
+[Epoch 8925/100000] [Batch 50/133] [D loss: -11.967417] [G loss: 4764900.500000]
+[Epoch 8925/100000] [Batch 55/133] [D loss: 11.614349] [G loss: 4765287.500000]
+[Epoch 8925/100000] [Batch 60/133] [D loss: 16.389233] [G loss: 4765031.000000]
+[Epoch 8925/100000] [Batch 65/133] [D loss: 7.016325] [G loss: 4765163.000000]
+[Epoch 8925/100000] [Batch 70/133] [D loss: -18.928215] [G loss: 4765032.000000]
+[Epoch 8925/100000] [Batch 75/133] [D loss: 4.028571] [G loss: 4764911.500000]
+[Epoch 8925/100000] [Batch 80/133] [D loss: 22.282904] [G loss: 4765143.500000]
+
+
+ckpt15  290000 FID：91
+ckpt151 300000 

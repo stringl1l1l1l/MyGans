@@ -1,0 +1,2 @@
+import wgan
+wgan.genRes()
